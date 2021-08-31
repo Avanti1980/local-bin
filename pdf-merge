@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 
 function show_help() {
-    echo "Usage:   $(basename $0) [-o out.pdf] -i in_pdf_list"
-    echo "         $(basename $0) -i in_pdf_list [-o out.pdf]"
-    echo "If -o option is not specified, the output will be merge.pdf"
+    echo "Usage:   $(basename $0) [options]"
+    echo "Options: -h, --help                 show help"
+    echo "         -v, --version              show version"
+    echo "         -b, --binary <gs|pdftk>    gs by default"
+    echo "         -o, --output <file>        merge.pdf if not specified"
+    echo "         -i, --input  <file>        necessary if option is not -h or -v"
+}
+
+function show_version() {
+    echo "$(basename $0) v20210901, depending on ghostscript or pdftk"
 }
 
 command='gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -sOutputFile=' && in_list='' && n=1
@@ -13,6 +20,7 @@ while [ $n -le $# ]; do
     eval var=\${$n}
     case $(echo "$var" | sed -e 's/\(.*\.\)//' | tr 'A-Z' 'a-z') in
     '-h' | '--help') show_help && exit 1 ;;
+    '-v' | '--version') show_version && exit 1 ;;
     '-i')
         if [ $in = -1 ]; then
             in=0
