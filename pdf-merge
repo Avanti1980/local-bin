@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 
 function show_help() {
-    echo "Usage:   $(basename $0) [options]"
-    echo "Options: -h, --help                 show help"
-    echo "         -v, --version              show version"
-    echo "         -i, --input  <file>        necessary if option is not -h or -v"
-    echo "         -b, --bin <pdftk|gs>       use pdftk if not specified"
-    echo "         -o, --output <file>        merge.pdf if not specified"
-    echo "Example: $(basename $0) -i 1.pdf 2.pdf 3.pdf -o out.pdf"
+    echo "Usage:        $(basename $0) [options]"
+    echo "Dependencies: pdftk or ghostscript"
+    echo "Options:      -h, --help                 show help"
+    echo "              -v, --version              show version"
+    echo "              -b, --bin    <pdftk|gs>    use pdftk if not specified"
+    echo "              -i, --input  <file>        necessary if option is not -h or -v"
+    echo "              -o, --output <file>        merge.pdf if not specified"
+    echo "Example:      $(basename $0) -i 1.pdf 2.pdf 3.pdf -o out.pdf"
 }
 
 function show_version() {
-    echo "$(basename $0) v20210901, depending on pdftk or ghostscript"
+    echo "$(basename $0) v20210904, depending on pdftk or ghostscript"
 }
 
 in_list='' && bin=pdftk && n=1

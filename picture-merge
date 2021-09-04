@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 
 function show_help() {
-    echo "Usage:   $(basename $0) [options]"
-    echo "Options: -h, --help                 show help"
-    echo "         -v, --version              show version"
-    echo "         -i, --input     <file>     necessary if option is not -h or -v"
-    echo "         -o, --output    <file>     merge.jpg if not specified"
-    echo "         -d, --direction <h|v>      horizontal if not specified"
-    echo "Example: $(basename $0) -i 1.jpg 2.png 3.jpeg -d v -o out.jpg"
+    echo "Usage:        $(basename $0) [options]"
+    echo "Dependencies: imagemagick"
+    echo "Options:      -h, --help                 show help"
+    echo "              -v, --version              show version"
+    echo "              -d, --direction <h|v>      horizontal if not specified"
+    echo "              -i, --input     <file>     necessary if option is not -h or -v"
+    echo "              -o, --output    <file>     merge.jpg if not specified"
+    echo "Example:      $(basename $0) -d v -i 1.jpg 2.png 3.jpeg -o out.jpg"
 }
 
 function show_version() {
-    echo "$(basename $0) v20210901, depending on imagemagick"
+    echo "$(basename $0) v20210904, depending on imagemagick"
 }
 
 input_list='' && direction='+append' && n=1
