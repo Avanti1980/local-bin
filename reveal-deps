@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-sed -i 's/src="\(.*\)head.min.js/src="..\/common\/js\/head.min.js/g' $1
+sed -i 's/src="\(.*\)head.min.js"/src="..\/common\/js\/head.min.js"/g' $1
 
-sed -i 's/src="\(.*\)reveal.js"/src="..\/common\/js\/reveal.js/g' $1
+sed -i 's/src="\(.*\)reveal.js"/src="..\/common\/js\/reveal.js"/g' $1
 
 sed -i 's/src="\(.*\)MathJax.js"/src="..\/common\/js\/mathjax\/MathJax.js"/g' $1
 
