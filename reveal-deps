@@ -8,3 +8,4 @@ sed -i 's/src="\(.*\)MathJax.js"/src="..\/common\/js\/mathjax\/MathJax.js"/g' $1
 
 sed -i 's/"src":"\(.*\)notes.js"/"src":"..\/common\/js\/notes.js"/g' $1
 
+sed -i '/none.css/d' $1
