@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+input_prefix=${1%.*}
+
+cp "$1" temp.md
+
+sed -i 's/data-notes="\(.*\)"/data-notes=""/g' "$1"
+
+dir=$(
+    cd $(dirname ${BASH_SOURCE[0]})
+    pwd
+)
+
+node "$dir/mpe2html-deps/mpe2html.js" "$1"
+
+sed -i 's/src="\(.*\)head.min.js"/src="..\/common\/js\/head.min.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)reveal.js"/src="..\/common\/js\/reveal.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)MathJax.js"/src="..\/common\/js\/mathjax\/MathJax.js"/g' "$input_prefix.html"
+sed -i 's/"src":"\(.*\)notes.js"/"src":"..\/common\/js\/notes\/notes.js"/g' "$input_prefix.html"
+sed -i '/none.css/d' "$input_prefix.html"
+
+mv temp.md "$1"
