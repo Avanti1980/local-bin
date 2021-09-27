@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-if [ "$(echo ${1##*.} | tr 'A-Z' 'a-z')" = scss ]; then
-    sass --style compressed --watch $1:"${1%.*}".css
-else
-    echo "Error: invalid input!"
-fi

@@ -2,8 +2,9 @@
 
 input_prefix=${1%.*}
 
-cp "$1" temp.md
+cp "$1" "$input_prefix-backup.md"
 
+# clear notes
 sed -i 's/data-notes="\(.*\)"/data-notes=""/g' "$1"
 
 dir=$(
@@ -11,12 +12,16 @@ dir=$(
     pwd
 )
 
+# convert md to html according to the config file mpe2html.js
 node "$dir/mpe2html-deps/mpe2html.js" "$1"
 
+# for modify the path of *.js files
 sed -i 's/src="\(.*\)head.min.js"/src="..\/common\/js\/head.min.js"/g' "$input_prefix.html"
 sed -i 's/src="\(.*\)reveal.js"/src="..\/common\/js\/reveal.js"/g' "$input_prefix.html"
 sed -i 's/src="\(.*\)MathJax.js"/src="..\/common\/js\/mathjax\/MathJax.js"/g' "$input_prefix.html"
 sed -i 's/"src":"\(.*\)notes.js"/"src":"..\/common\/js\/notes\/notes.js"/g' "$input_prefix.html"
+
+# delete the line which imports none.css
 sed -i '/none.css/d' "$input_prefix.html"
 
-mv temp.md "$1"
+mv "$input_prefix-backup.md" "$1"

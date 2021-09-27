@@ -137,7 +137,7 @@ async function main() {
 
   //html export
 
-  await engine.htmlExport({ offline: false, runAllCodeChunks: true });
+  await engine.htmlExport({ offline: true, runAllCodeChunks: true });
 
   return process.exit();
 }
