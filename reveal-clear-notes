@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-sed -i 's/data-notes="\(.*\)"/data-notes=""/g' $1
