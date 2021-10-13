@@ -4,8 +4,9 @@ input_prefix=${1%.*}
 
 cp "$1" "$input_prefix-backup.md"
 
-# clear notes
-sed -i 's/data-notes="\(.*\)"/data-notes=""/g' "$1"
+if [ $2 == "1" ]; then
+    sed -i 's/data-notes="\(.*\)"/data-notes=""/g' "$1" # clear notes
+fi
 
 dir=$(
     cd $(dirname ${BASH_SOURCE[0]})
