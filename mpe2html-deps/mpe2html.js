@@ -6,7 +6,7 @@ const config = {
   usePandocParser: false,
 
   //In Markdown, a single newline character doesn't cause a line break in the generated HTML. In GitHub Flavored Markdown, that is not true. Enable this config option to insert line breaks in rendered HTML for single newlines in Markdown source.
-  breakOnSingleNewLine: true,
+  breakOnSingleNewLine: false,
 
   //Enable smartypants and other sweet transforms.
   enableTypographer: false,

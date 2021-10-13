@@ -1,26 +1,32 @@
 #!/usr/bin/env bash
+# script $1 $2
+# $1: path of .md file to be converted
+# $2: indicator for clear notes
 
 input_prefix=${1%.*}
 
 cp "$1" "$input_prefix-backup.md"
 
-if [ $2 == "1" ]; then
-    sed -i 's/data-notes="\(.*\)"/data-notes=""/g' "$1" # clear notes
+if [ $2 == "1" ]; then # clear notes
+    sed -i 's/data-notes="\(.*\)"/data-notes=""/g' "$1"
 fi
 
+# convert md to html according to the config file mpe2html.js
 dir=$(
     cd $(dirname ${BASH_SOURCE[0]})
     pwd
 )
-
-# convert md to html according to the config file mpe2html.js
 node "$dir/mpe2html-deps/mpe2html.js" "$1"
 
 # for modify the path of *.js files
 sed -i 's/src="\(.*\)head.min.js"/src="..\/common\/js\/head.min.js"/g' "$input_prefix.html"
 sed -i 's/src="\(.*\)reveal.js"/src="..\/common\/js\/reveal.js"/g' "$input_prefix.html"
 sed -i 's/src="\(.*\)MathJax.js"/src="..\/common\/js\/mathjax\/MathJax.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)mermaid.min.js"/src="..\/common\/js\/mermaid\/mermaid.min.js"/g' "$input_prefix.html"
 sed -i 's/"src":"\(.*\)notes.js"/"src":"..\/common\/js\/notes\/notes.js"/g' "$input_prefix.html"
+
+sed -i 's/<p><\/p>//g' "$input_prefix.html"
+sed -i 's/<\/p><p>//g' "$input_prefix.html"
 
 # delete the line which imports none.css
 sed -i '/none.css/d' "$input_prefix.html"
