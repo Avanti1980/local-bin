@@ -18,13 +18,14 @@ dir=$(
 )
 node "$dir/mpe2html-deps/mpe2html.js" "$1"
 
-# for modify the path of *.js files
+# modify the path of *.js files
 sed -i 's/src="\(.*\)head.min.js"/src="..\/common\/js\/head.min.js"/g' "$input_prefix.html"
 sed -i 's/src="\(.*\)reveal.js"/src="..\/common\/js\/reveal.js"/g' "$input_prefix.html"
 sed -i 's/src="\(.*\)MathJax.js"/src="..\/common\/js\/mathjax\/MathJax.js"/g' "$input_prefix.html"
 sed -i 's/src="\(.*\)mermaid.min.js"/src="..\/common\/js\/mermaid\/mermaid.min.js"/g' "$input_prefix.html"
 sed -i 's/"src":"\(.*\)notes.js"/"src":"..\/common\/js\/notes\/notes.js"/g' "$input_prefix.html"
 
+# mpe parser adds empty <p></p> above and below the math equation wrapped by $$, thus enlarge the margin 
 sed -i 's/<p><\/p>//g' "$input_prefix.html"
 sed -i 's/<\/p><p>//g' "$input_prefix.html"
 
