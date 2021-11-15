@@ -10,4 +10,4 @@ touch filelist.txt
 
 while IFS= read -d $'\0' -r file; do
     printf '%s\n' "$file" >>filelist.txt
-done < <(find $1 -print0)
+done < <(find $1 -maxdepth 1 -print0)
