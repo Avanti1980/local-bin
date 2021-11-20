@@ -2,6 +2,7 @@
 
 function show_help() {
     echo "Usage:        $(basename $0) [options]"
+    echo "Dependency:   baidupcs-go"
     echo "Options:      help        显示帮助"
     echo "              init path   初始化 将度盘中的path文件夹和当前目录关联起来"
     echo "              commit      更新保存在本地的度盘文件列表和本地文件列表"
