@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # script $1 $2
 # $1: path of .md file to be converted
-# $2: indicator for clear notes
+# $2: 1 for clear notes
 
 input_prefix=${1%.*}
 
@@ -19,11 +19,19 @@ dir=$(
 node "$dir/mpe2html-deps/mpe2html.js" "$1"
 
 # modify the path of *.js files
-sed -i 's/src="\(.*\)head.min.js"/src="..\/common\/js\/head.min.js"/g' "$input_prefix.html"
-sed -i 's/src="\(.*\)reveal.js"/src="..\/common\/js\/reveal.js"/g' "$input_prefix.html"
-sed -i 's/src="\(.*\)MathJax.js"/src="..\/common\/js\/mathjax\/MathJax.js"/g' "$input_prefix.html"
-sed -i 's/src="\(.*\)mermaid.min.js"/src="..\/common\/js\/mermaid\/mermaid.min.js"/g' "$input_prefix.html"
-sed -i 's/"src":"\(.*\)notes.js"/"src":"..\/common\/js\/notes\/notes.js"/g' "$input_prefix.html"
+#sed -i 's/src="\(.*\)head.min.js"/src="..\/js\/head.min.js"/g' "$input_prefix.html"
+# sed -i 's/src="\(.*\)reveal.js"/src="..\/js\/reveal.js"/g' "$input_prefix.html"
+# sed -i 's/src="\(.*\)MathJax.js"/src="..\/js\/mathjax\/MathJax.js"/g' "$input_prefix.html"
+# sed -i 's/src="\(.*\)mermaid.min.js"/src="..\/js\/mermaid\/mermaid.min.js"/g' "$input_prefix.html"
+
+sed -i 's/src="\(.*\)head.min.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/headjs\/1.0.3\/head.min.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)reveal.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/reveal.js\/4.3.1\/reveal.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)MathJax.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/mathjax\/2.7.9\/MathJax.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)mermaid.min.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/mermaid\/9.0.0\/mermaid.min.js"/g' "$input_prefix.html"
+sed -i 's/src":"\(.*\)notes.js/src":"..\/js\/notes\/notes.js/g' "$input_prefix.html"
+
+# add plugins: zoom, chalkboard
+sed -i "s/async\":true}]})/async\":true}],chalkboard:{boardmarkerWidth:3,chalkWidth:7,chalkEffect:1.0,storage:null,src:null,readOnly:undefined,transition:800,theme:\"chalkboard\",background:['rgba(127,127,127,.1)',path+'img\/blackboard.png'],grid:{color:'rgb(50,50,10,0.5)',distance:80,width:2},eraser:{src:path+'img\/sponge.png',radius:20},boardmarkers:[{color:'rgba(100,100,100,1)',cursor:'url('+path+'img\/boardmarker-black.png),auto'},{color:'rgba(30,144,255,1)',cursor:'url('+path+'img\/boardmarker-blue.png),auto'},{color:'rgba(220,20,60,1)',cursor:'url('+path+'img\/boardmarker-red.png),auto'},{color:'rgba(50,205,50,1)',cursor:'url('+path+'img\/boardmarker-green.png),auto'},{color:'rgba(255,140,0,1)',cursor:'url('+path+'img\/boardmarker-orange.png),auto'},{color:'rgba(150,0,20150,1)',cursor:'url('+path+'img\/boardmarker-purple.png),auto'},{color:'rgba(255,220,0,1)',cursor:'url('+path+'img\/boardmarker-yellow.png),auto'}],chalks:[{color:'rgba(255,255,255,0.5)',cursor:'url('+path+'img\/chalk-white.png),auto'},{color:'rgba(96,154,244,0.5)',cursor:'url('+path+'img\/chalk-blue.png),auto'},{color:'rgba(237,20,28,0.5)',cursor:'url('+path+'img\/chalk-red.png),auto'},{color:'rgba(20,237,28,0.5)',cursor:'url('+path+'img\/chalk-green.png),auto'},{color:'rgba(220,133,41,0.5)',cursor:'url('+path+'img\/chalk-orange.png),auto'},{color:'rgba(220,0,220,0.5)',cursor:'url('+path+'img\/chalk-purple.png),auto'},{color:'rgba(255,220,0,0.5)',cursor:'url('+path+'img\/chalk-yellow.png),auto'}]},customcontrols:{controls:[{icon:'<iclass=\"fafa-pen-square\"><\/i>',title:'Togglechalkboard(B)',action:'RevealChalkboard.toggleChalkboard();'},{icon:'<iclass=\"fafa-pen\"><\/i>',title:'Togglenotescanvas(C)',action:'RevealChalkboard.toggleNotesCanvas();'}]},plugins:[RevealZoom,RevealChalkboard,RevealCustomControls]})/g" "$input_prefix.html"
 
 # mpe parser adds empty <p></p> above and below the math equation wrapped by $$, thus enlarge the margin 
 sed -i 's/<p><\/p>//g' "$input_prefix.html"
