@@ -18,22 +18,27 @@ dir=$(
 )
 node "$dir/mpe2html-deps/mpe2html.js" "$1"
 
-# modify the path of *.js files
-#sed -i 's/src="\(.*\)head.min.js"/src="..\/js\/head.min.js"/g' "$input_prefix.html"
-# sed -i 's/src="\(.*\)reveal.js"/src="..\/js\/reveal.js"/g' "$input_prefix.html"
-# sed -i 's/src="\(.*\)MathJax.js"/src="..\/js\/mathjax\/MathJax.js"/g' "$input_prefix.html"
-# sed -i 's/src="\(.*\)mermaid.min.js"/src="..\/js\/mermaid\/mermaid.min.js"/g' "$input_prefix.html"
+# local js files version:
+# cdnjs.cloudflare.com/ajax/libs/headjs/1.0.3/head.min.js
+# cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.js
+# cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js
+# cdnjs.cloudflare.com/ajax/libs/mermaid/9.0.0/mermaid.min.js
+# cdnjs.cloudflare.com/ajax/libs/mermaid/9.0.0/mermaid.core.js
 
-sed -i 's/src="\(.*\)head.min.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/headjs\/1.0.3\/head.min.js"/g' "$input_prefix.html"
-sed -i 's/src="\(.*\)reveal.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/reveal.js\/4.3.1\/reveal.js"/g' "$input_prefix.html"
-sed -i 's/src="\(.*\)MathJax.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/mathjax\/2.7.9\/MathJax.js"/g' "$input_prefix.html"
-sed -i 's/src="\(.*\)mermaid.min.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/mermaid\/9.0.0\/mermaid.min.js"/g' "$input_prefix.html"
-sed -i 's/src":"\(.*\)notes.js/src":"..\/js\/notes\/notes.js/g' "$input_prefix.html"
+# use local js files
+sed -i 's/src="\(.*\)head.min.js"/src="..\/js\/head.min.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)reveal.js"/src="..\/js\/reveal.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)MathJax.js"/src="..\/plugin\/MathJax-2.7.9\/MathJax.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)mermaid.min.js"/src="..\/plugin\/mermaid\/mermaid.min.js"/g' "$input_prefix.html"
+sed -i 's/src":"\(.*\)notes.js/src":"..\/plugin\/notes\/notes.js/g' "$input_prefix.html"
 
-# add plugins: zoom, chalkboard
-sed -i "s/async\":true}]})/async\":true}],chalkboard:{boardmarkerWidth:3,chalkWidth:7,chalkEffect:1.0,storage:null,src:null,readOnly:undefined,transition:800,theme:\"chalkboard\",background:['rgba(127,127,127,.1)',path+'img\/blackboard.png'],grid:{color:'rgb(50,50,10,0.5)',distance:80,width:2},eraser:{src:path+'img\/sponge.png',radius:20},boardmarkers:[{color:'rgba(100,100,100,1)',cursor:'url('+path+'img\/boardmarker-black.png),auto'},{color:'rgba(30,144,255,1)',cursor:'url('+path+'img\/boardmarker-blue.png),auto'},{color:'rgba(220,20,60,1)',cursor:'url('+path+'img\/boardmarker-red.png),auto'},{color:'rgba(50,205,50,1)',cursor:'url('+path+'img\/boardmarker-green.png),auto'},{color:'rgba(255,140,0,1)',cursor:'url('+path+'img\/boardmarker-orange.png),auto'},{color:'rgba(150,0,20150,1)',cursor:'url('+path+'img\/boardmarker-purple.png),auto'},{color:'rgba(255,220,0,1)',cursor:'url('+path+'img\/boardmarker-yellow.png),auto'}],chalks:[{color:'rgba(255,255,255,0.5)',cursor:'url('+path+'img\/chalk-white.png),auto'},{color:'rgba(96,154,244,0.5)',cursor:'url('+path+'img\/chalk-blue.png),auto'},{color:'rgba(237,20,28,0.5)',cursor:'url('+path+'img\/chalk-red.png),auto'},{color:'rgba(20,237,28,0.5)',cursor:'url('+path+'img\/chalk-green.png),auto'},{color:'rgba(220,133,41,0.5)',cursor:'url('+path+'img\/chalk-orange.png),auto'},{color:'rgba(220,0,220,0.5)',cursor:'url('+path+'img\/chalk-purple.png),auto'},{color:'rgba(255,220,0,0.5)',cursor:'url('+path+'img\/chalk-yellow.png),auto'}]},customcontrols:{controls:[{icon:'<iclass=\"fafa-pen-square\"><\/i>',title:'Togglechalkboard(B)',action:'RevealChalkboard.toggleChalkboard();'},{icon:'<iclass=\"fafa-pen\"><\/i>',title:'Togglenotescanvas(C)',action:'RevealChalkboard.toggleNotesCanvas();'}]},plugins:[RevealZoom,RevealChalkboard,RevealCustomControls]})/g" "$input_prefix.html"
+# add id="theme" to the link of theme css
+sed -i 's/<link rel="stylesheet" href="..\/css\/theme\/solarized.css">/<link rel="stylesheet" href="..\/css\/theme\/solarized.css" id="theme">/g' "$input_prefix.html"
 
-# mpe parser adds empty <p></p> above and below the math equation wrapped by $$, thus enlarge the margin 
+# add plugins: zoom, chalkboard, menu
+sed -i "s/async\":true}]})/async\":true}],chalkboard:{boardmarkerWidth:3,chalkWidth:7,chalkEffect:1.0,storage:null,src:null,readOnly:undefined,transition:800,theme:\"chalkboard\",background:['rgba(127,127,127,.1)',path+'img\/blackboard.png'],grid:{color:'rgb(50,50,10,0.5)',distance:80,width:2},eraser:{src:path+'img\/sponge.png',radius:20},boardmarkers:[{color:'rgba(100,100,100,1)',cursor:'url('+path+'img\/boardmarker-black.png),auto'},{color:'rgba(30,144,255,1)',cursor:'url('+path+'img\/boardmarker-blue.png),auto'},{color:'rgba(220,20,60,1)',cursor:'url('+path+'img\/boardmarker-red.png),auto'},{color:'rgba(50,205,50,1)',cursor:'url('+path+'img\/boardmarker-green.png),auto'},{color:'rgba(255,140,0,1)',cursor:'url('+path+'img\/boardmarker-orange.png),auto'},{color:'rgba(150,0,20150,1)',cursor:'url('+path+'img\/boardmarker-purple.png),auto'},{color:'rgba(255,220,0,1)',cursor:'url('+path+'img\/boardmarker-yellow.png),auto'}],chalks:[{color:'rgba(255,255,255,0.5)',cursor:'url('+path+'img\/chalk-white.png),auto'},{color:'rgba(96,154,244,0.5)',cursor:'url('+path+'img\/chalk-blue.png),auto'},{color:'rgba(237,20,28,0.5)',cursor:'url('+path+'img\/chalk-red.png),auto'},{color:'rgba(20,237,28,0.5)',cursor:'url('+path+'img\/chalk-green.png),auto'},{color:'rgba(220,133,41,0.5)',cursor:'url('+path+'img\/chalk-orange.png),auto'},{color:'rgba(220,0,220,0.5)',cursor:'url('+path+'img\/chalk-purple.png),auto'},{color:'rgba(255,220,0,0.5)',cursor:'url('+path+'img\/chalk-yellow.png),auto'}]},customcontrols:{controls:[{icon:'<iclass=\"fafa-pen-square\"><\/i>',title:'Togglechalkboard(B)',action:'RevealChalkboard.toggleChalkboard();'},{icon:'<iclass=\"fafa-pen\"><\/i>',title:'Togglenotescanvas(C)',action:'RevealChalkboard.toggleNotesCanvas();'}]},menu:{side:'left',width:'normal',numbers:'h.v',titleSelector:'h1,h2,h3,h4,h5,h6',useTextContentForMissingTitles:false,hideMissingTitles:false,markers:true,custom:[{title:'关于',icon:'<i class=\"fa fa-info\">',content:'<p>本课件由 <b>张腾<\/b> 制作<\/p>'}],themes:true,themesPath:'..\/css\/theme\/',transitions:true,openButton:true,openSlideNumber:false,keyboard:true,sticky:false,autoOpen:true,delayInit:false,openOnInit:false,loadIcons:true},plugins:[RevealZoom,RevealChalkboard,RevealCustomControls,RevealMenu]})/g" "$input_prefix.html"
+
+# mpe parser adds empty <p></p> above and below the math equation wrapped by $$, thus enlarge the margin
 sed -i 's/<p><\/p>//g' "$input_prefix.html"
 sed -i 's/<\/p><p>//g' "$input_prefix.html"
 
