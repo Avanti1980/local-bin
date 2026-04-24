@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# script $1 $2
+# $1: path of .md file to be converted
+# $2: 1 for clear notes
+
+input_prefix=${1%.*}
+
+cp "$1" "$input_prefix-backup.md"
+
+if [ $2 == "1" ]; then # clear notes
+    sed -i 's/data-notes="\(.*\)"/data-notes=""/g' "$1"
+fi
+
+# convert md to html according to the config file mpe2html.js
+dir=$(
+    cd $(dirname ${BASH_SOURCE[0]})
+    pwd
+)
+
+node "$dir/md2html-deps/md2html.js" "$1"
+
+
+# local js files version:
+# cdnjs.cloudflare.com/ajax/libs/headjs/1.0.3/head.min.js
+# https://cdnjs.cloudflare.com/ajax/libs/1/5.2.1/reveal.js
+# https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.0.0/tex-chtml.js
+# https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.12.0/mermaid.min.js
+# cdnjs.cloudflare.com/ajax/libs/mermaid/9.0.0/mermaid.core.js
+
+# use local js files
+# sed -i 's/src="\(.*\)head.min.js"/src="..\/js\/head.min.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)reveal.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/reveal.js\/5.2.1\/reveal.js"/g' "$input_prefix.html"
+# sed -i 's/src="\(.*\)tex-chtml-full.js"/src="..\/js\/tex-chtml-full.js"/g' "$input_prefix.html"
+sed -i 's/src="\(.*\)mermaid.min.js"/src="https:\/\/cdnjs.cloudflare.com\/ajax\/libs\/mermaid\/11.12.0\/mermaid.min.js"/g' "$input_prefix.html"
+
+# add id="theme" to the link of theme css
+sed -i 's/<link rel="stylesheet" href="..\/css\/theme\/solarized.css">/<link rel="stylesheet" href="..\/css\/theme\/solarized.css" id="theme">/g' "$input_prefix.html"
+
+# add plugins: zoom, chalkboard, menu
+sed -i "s/async\":true}]})/async\":true}],chalkboard:{boardmarkerWidth:3,chalkWidth:7,chalkEffect:1.0,storage:null,src:null,readOnly:undefined,transition:800,theme:\"chalkboard\",background:['rgba(127,127,127,.1)',path+'img\/blackboard.png'],grid:{color:'rgb(50,50,10,0.5)',distance:80,width:2},eraser:{src:path+'img\/sponge.png',radius:20},boardmarkers:[{color:'rgba(100,100,100,1)',cursor:'url('+path+'img\/boardmarker-black.png),auto'},{color:'rgba(30,144,255,1)',cursor:'url('+path+'img\/boardmarker-blue.png),auto'},{color:'rgba(220,20,60,1)',cursor:'url('+path+'img\/boardmarker-red.png),auto'},{color:'rgba(50,205,50,1)',cursor:'url('+path+'img\/boardmarker-green.png),auto'},{color:'rgba(255,140,0,1)',cursor:'url('+path+'img\/boardmarker-orange.png),auto'},{color:'rgba(150,0,20150,1)',cursor:'url('+path+'img\/boardmarker-purple.png),auto'},{color:'rgba(255,220,0,1)',cursor:'url('+path+'img\/boardmarker-yellow.png),auto'}],chalks:[{color:'rgba(255,255,255,0.5)',cursor:'url('+path+'img\/chalk-white.png),auto'},{color:'rgba(96,154,244,0.5)',cursor:'url('+path+'img\/chalk-blue.png),auto'},{color:'rgba(237,20,28,0.5)',cursor:'url('+path+'img\/chalk-red.png),auto'},{color:'rgba(20,237,28,0.5)',cursor:'url('+path+'img\/chalk-green.png),auto'},{color:'rgba(220,133,41,0.5)',cursor:'url('+path+'img\/chalk-orange.png),auto'},{color:'rgba(220,0,220,0.5)',cursor:'url('+path+'img\/chalk-purple.png),auto'},{color:'rgba(255,220,0,0.5)',cursor:'url('+path+'img\/chalk-yellow.png),auto'}]},customcontrols:{controls:[{icon:'<i class=\"fa fa-pencil-square\"><\/i>',title:'Togglechalkboard(B)',action:'RevealChalkboard.toggleChalkboard();'},{icon:'<i class=\"fa fa-pencil\"><\/i>',title:'Togglenotescanvas(C)',action:'RevealChalkboard.toggleNotesCanvas();'}]},menu:{side:'left',width:'normal',numbers:'h.v',titleSelector:'h1,h2,h3,h4,h5,h6',useTextContentForMissingTitles:false,hideMissingTitles:false,markers:true,custom:[{title:'关于',icon:'<i class=\"fa fa-info\"><\/i>',content:'<p>本课件由<u>张腾<\/u>独立制作完成<\/p><br><p>欢迎发送问题至<i><a href=\"mailto:tengzhang@hust.edu.cn\">tengzhang@hust.edu.cn<\/a><\/i><\/p>'}],themes:true,themesPath:'..\/css\/theme\/',transitions:true,openButton:true,openSlideNumber:false,keyboard:true,sticky:false,autoOpen:true,delayInit:false,openOnInit:false,loadIcons:true},plugins:[RevealZoom,RevealChalkboard,RevealCustomControls,RevealMenu,RevealNotes]})/g" "$input_prefix.html"
+
+sed -i "s/,\"dependencies\"\(.*\)async\":true}]//g" "$input_prefix.html"
+
+# mpe parser adds empty <p></p> above and below the math equation wrapped by $$, thus enlarge the margin
+sed -i 's/<p><\/p>//g' "$input_prefix.html"
+sed -i 's/<\/p><p>//g' "$input_prefix.html"
+
+sed -i 's/<code>//g' "$input_prefix.html"
+sed -i 's/<\/code>//g' "$input_prefix.html"
+
+# delete the line which imports none.css
+sed -i '/none.css/d' "$input_prefix.html"
+
+sed -i '/vega.min.js/d' "$input_prefix.html"
+
+mv "$input_prefix-backup.md" "$1"

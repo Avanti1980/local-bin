@@ -1,0 +1,2 @@
+python "$1.py"
+pdf2svg "$1.pdf" "$1.svg"
