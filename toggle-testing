@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CONF="/etc/pacman.conf"
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "Error: this script must be run as root."
+    exit 1
+fi
+
+if [ ! -f "$CONF" ]; then
+    echo "Error: $CONF not found."
+    exit 1
+fi
+
+cp -f "$CONF" "${CONF}.bak"
+
+line_no=$(grep -n '^\s*#*\[testing\]' "$CONF" | head -n1 | cut -d: -f1)
+
+if [ -z "$line_no" ]; then
+    echo "Error: [testing] section not found in $CONF."
+    exit 1
+fi
+
+# 找到该 section 结束位置：下一个 [xxx] 或文件末尾
+total=$(wc -l <"$CONF")
+end_line=$((line_no + 1))
+
+while [ "$end_line" -le "$total" ]; do
+    cur=$(sed -n "${end_line}p" "$CONF")
+    if echo "$cur" | grep -qE '^\s*\['; then
+        break
+    fi
+    end_line=$((end_line + 1))
+done
+end_line=$((end_line - 1))
+
+if [ "$end_line" -lt "$line_no" ]; then
+    end_line="$line_no"
+fi
+
+# 判断当前是否已启用：看 [testing] 这一行是否以 # 开头
+header=$(sed -n "${line_no}p" "$CONF")
+if echo "$header" | grep -qE '^\s*#'; then
+    # 当前被注释，启用：去掉 section 内每行开头的 #
+    sed -i "${line_no},${end_line}s/^\s*#\s\?//" "$CONF"
+    echo "The [testing] repository has been enabled."
+else
+    # 当前已启用，禁用：在 section 内每行开头加 #
+    sed -i "${line_no},${end_line}s/^/#/" "$CONF"
+    echo "The [testing] repository has been disabled."
+fi

@@ -1,2 +1,0 @@
-xelatex -synctex=1 -interaction=nonstopmode -shell-escape "$1.tex"
-pdf2svg "$1.pdf" "$1.svg"

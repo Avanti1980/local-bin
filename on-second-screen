@@ -1,30 +1,61 @@
 #!/usr/bin/env bash
 
-connected_outputs=$(xrandr | grep " connected " | cut -d ' ' -f 1)
-primary_output=$(xrandr | grep " connected primary " | cut -d ' ' -f 1)
+set -euo pipefail
 
-primary_width=$(xrandr | grep " connected primary " | cut -d ' ' -f 4 | cut -d '+' -f 1 | cut -d 'x' -f 1)
-primary_height=$(xrandr | grep " connected primary " | cut -d ' ' -f 4 | cut -d '+' -f 1 | cut -d 'x' -f 2)
+if ! command -v xrandr >/dev/null 2>&1; then
+    echo "Error: xrandr not found."
+    exit 1
+fi
 
-connected_width=$(xrandr | grep " connected " | sed 's/[ ]*//' | cut -d ' ' -f 1 | cut -d 'x' -f 1)
-connected_height=$(xrandr | grep " connected " | sed 's/[ ]*//' | cut -d ' ' -f 1 | cut -d 'x' -f 2)
+direction="${1:-}"
 
-echo "$connected_width" "$connected_height"
+case "$direction" in
+r | l | t | b) ;;
+*)
+    echo "Usage: $(basename "$0") <r|l|t|b>"
+    echo "  r: extend to the right"
+    echo "  l: extend to the left"
+    echo "  t: extend to the top"
+    echo "  b: extend to the bottom"
+    exit 1
+    ;;
+esac
 
+primary_output=$(xrandr | grep " connected primary " | head -n1 | awk '{print $1}')
 
-for connected_output in $connected_outputs; do
-    if [ "$connected_output" != "$primary_output" ]; then
-        if [ $1 == "r" ]; then # 右扩展
-            xrandr --output $primary_output --auto --pos 0x0 --output $connected_output --auto --pos "$primary_width"x0
-        fi
-        if [ $1 == "b" ]; then # 下扩展
-            xrandr --output $primary_output --auto --pos 0x0 --output $connected_output --auto --pos 0x"$primary_height"
-        fi
-        if [ $1 == "l" ]; then # 左扩展
-            xrandr --output $primary_output --auto --pos "$connected_width"x0 --output $connected_output --auto --pos 0x0
-        fi
-        if [ $1 == "t" ]; then # 上扩展
-            xrandr --output $primary_output --auto --pos 0x"$connected_height" --output $connected_output --auto --pos 0x0
-        fi
+if [ -z "$primary_output" ]; then
+    echo "Error: no primary output found."
+    exit 1
+fi
+
+secondary_output=""
+
+while IFS= read -r line; do
+    output_name=$(echo "$line" | awk '{print $1}')
+    if [ "$output_name" != "$primary_output" ]; then
+        secondary_output="$output_name"
+        break
     fi
-done
+done < <(xrandr | grep " connected ")
+
+if [ -z "$secondary_output" ]; then
+    echo "Error: no secondary connected output found."
+    exit 1
+fi
+
+case "$direction" in
+r)
+    xrandr --output "$secondary_output" --auto --right-of "$primary_output"
+    ;;
+l)
+    xrandr --output "$secondary_output" --auto --left-of "$primary_output"
+    ;;
+t)
+    xrandr --output "$secondary_output" --auto --above "$primary_output"
+    ;;
+b)
+    xrandr --output "$secondary_output" --auto --below "$primary_output"
+    ;;
+esac
+
+echo "Extended: $secondary_output ${direction} of $primary_output"

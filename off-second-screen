@@ -1,10 +1,30 @@
 #!/usr/bin/env bash
 
-connected_outputs=$(xrandr | grep " connected " | cut -d ' ' -f 1)
-primary_output=$(xrandr | grep " connected primary " | cut -d ' ' -f 1)
+set -euo pipefail
 
-for connected_output in $connected_outputs; do
-    if [ "$connected_output" != "$primary_output" ]; then
-        xrandr --output $connected_output --off
+if ! command -v xrandr >/dev/null 2>&1; then
+    echo "Error: xrandr not found."
+    exit 1
+fi
+
+primary_output=$(xrandr | grep " connected primary " | head -n1 | awk '{print $1}')
+
+if [ -z "$primary_output" ]; then
+    echo "Error: no primary output found."
+    exit 1
+fi
+
+found=0
+
+while IFS= read -r line; do
+    output_name=$(echo "$line" | awk '{print $1}')
+    if [ "$output_name" != "$primary_output" ]; then
+        xrandr --output "$output_name" --off
+        echo "Turned off: $output_name"
+        found=1
     fi
-done
+done < <(xrandr | grep " connected ")
+
+if [ "$found" -eq 0 ]; then
+    echo "No secondary display to turn off."
+fi

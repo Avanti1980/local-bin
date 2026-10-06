@@ -1,3 +1,31 @@
 #!/usr/bin/env bash
 
-echo 自 $(head -n1 /var/log/pacman.log | cut -d '[' -f 2 | cut -d ']' -f 1) 以来 $(head -n1 /var/log/pacman.log | cut -d '[' -f 3 | cut -d ']' -f 1) 一共滚了 $(grep -c "full system upgrade" /var/log/pacman.log) 次
+set -euo pipefail
+
+LOG="/var/log/pacman.log"
+
+if [ ! -f "$LOG" ]; then
+    echo "Error: $LOG not found."
+    exit 1
+fi
+
+if [ ! -s "$LOG" ]; then
+    echo "No pacman log entries found."
+    exit 0
+fi
+
+# 取第一条日志的时间戳，格式如 [2024-01-01T12:00:00+0800]
+first_ts=$(head -n1 "$LOG" | grep -oP '\[\K[^\]]+' | head -n1)
+# 取最后一条日志的时间戳
+last_ts=$(tail -n1 "$LOG" | grep -oP '\[\K[^\]]+' | head -n1)
+
+# 统计 full system upgrade 次数，|| true 防止 grep -c 返回 1 导致退出
+count=$(grep -c "full system upgrade" "$LOG" || true)
+
+if [ -z "$first_ts" ] || [ -z "$last_ts" ]; then
+    echo "Warning: could not parse timestamps from $LOG."
+    echo "Total full system upgrades: ${count}"
+    exit 0
+fi
+
+echo "自 ${first_ts} 以来，到 ${last_ts}，一共滚了 ${count} 次"

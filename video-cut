@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VERSION="v261006"
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [options]
+
+Dependency: ffmpeg, ffprobe
+
+Options:
+  -h, --help           show help
+  -v, --version        show version
+  -i, --input <file>   input video file (required)
+  -s, --start <time>   start time, default 00:00:00
+  -e, --end   <time>   end time, default video duration
+  -o, --output <file>  output file, default <name>-cut.<ext>
+
+Time format:
+  HH:MM:SS[.ms]  or  seconds
+
+Example:
+  $(basename "$0") -i a.mp4 -s 00:00:20 -e 120
+EOF
+}
+
+show_version() {
+    echo "$(basename "$0") ${VERSION}, depending on ffmpeg and ffprobe"
+}
+
+# 把 HH:MM:SS[.ms] 或纯秒数转成秒
+to_seconds() {
+    local t="$1"
+    if [[ "$t" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+        echo "$t"
+        return
+    fi
+    if [[ "$t" =~ ^([0-9]+):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?$ ]]; then
+        local h="${BASH_REMATCH[1]}"
+        local m="${BASH_REMATCH[2]}"
+        local s="${BASH_REMATCH[3]}"
+        local frac="${BASH_REMATCH[4]:-0}"
+        awk "BEGIN{printf \"%.6f\", ${h}*3600 + ${m}*60 + ${s} + ${frac}}"
+        return
+    fi
+    return 1
+}
+
+input=""
+output=""
+start=""
+end=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    -h | --help)
+        show_help
+        exit 0
+        ;;
+    -v | --version)
+        show_version
+        exit 0
+        ;;
+    -i | --input)
+        [[ -z "${2:-}" ]] && {
+            echo "Error: -i/--input requires a file path."
+            exit 1
+        }
+        input="$2"
+        shift 2
+        ;;
+    -s | --start)
+        [[ -z "${2:-}" ]] && {
+            echo "Error: -s/--start requires a time value."
+            exit 1
+        }
+        start="$2"
+        shift 2
+        ;;
+    -e | --end)
+        [[ -z "${2:-}" ]] && {
+            echo "Error: -e/--end requires a time value."
+            exit 1
+        }
+        end="$2"
+        shift 2
+        ;;
+    -o | --output)
+        [[ -z "${2:-}" ]] && {
+            echo "Error: -o/--output requires a file path."
+            exit 1
+        }
+        output="$2"
+        shift 2
+        ;;
+    *)
+        echo "Error: unknown option '$1'."
+        show_help
+        exit 1
+        ;;
+    esac
+done
+
+if [[ -z "$input" ]]; then
+    echo "Error: no input file specified."
+    show_help
+    exit 1
+fi
+
+if [[ ! -f "$input" ]]; then
+    echo "Error: input file not found: $input"
+    exit 1
+fi
+
+if [[ -z "$output" ]]; then
+    base="${input%.*}"
+    ext="${input##*.}"
+    if [[ "$base" == "$ext" ]]; then
+        output="${input}-cut"
+    else
+        output="${base}-cut.${ext}"
+    fi
+fi
+
+if [[ "$input" == "$output" ]]; then
+    echo "Error: output file would overwrite input file."
+    exit 1
+fi
+
+duration_sec=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$input")
+if [[ -z "$duration_sec" ]]; then
+    echo "Error: cannot get duration from input file."
+    exit 1
+fi
+
+start_sec=$(to_seconds "${start:-0}")
+end_sec=$(to_seconds "${end:-$duration_sec}")
+
+if [[ -z "$start_sec" || -z "$end_sec" ]]; then
+    echo "Error: invalid time format."
+    exit 1
+fi
+
+if awk "BEGIN{exit !($start_sec >= $end_sec)}"; then
+    echo "Error: start time should be smaller than end time."
+    exit 1
+fi
+
+if awk "BEGIN{exit !($end_sec > $duration_sec)}"; then
+    echo "Warning: end time exceeds video duration (${duration_sec}s), using video duration."
+    end_sec="$duration_sec"
+fi
+
+ffmpeg -hide_banner -loglevel error \
+    -i "$input" \
+    -ss "$start_sec" \
+    -to "$end_sec" \
+    -c copy \
+    -avoid_negative_ts make_zero \
+    -y "$output"
+
+echo "Output: $output"

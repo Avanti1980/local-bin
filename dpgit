@@ -1,67 +1,134 @@
 #!/usr/bin/env bash
 
-function show_help() {
-    echo "Usage:        $(basename $0) [options]"
-    echo "Dependency:   baidupcs-go"
-    echo "Options:      help        显示帮助"
-    echo "              init path   初始化 将度盘中的path文件夹和当前目录关联起来"
-    echo "              commit      更新保存在本地的度盘文件列表和本地文件列表"
-    echo "              diff        显示度盘和本地目录中的文件差异"
-    echo "              push        将本地有但度盘中没有的文件上传到度盘"
-    echo "              pull        将本地没有但度盘中有的文件下载到本地"
-    echo "              sync        push + pull"
-    echo "Examples:     $(basename $0) init /音乐/谭晶 && $(basename $0) diff"
-    echo "              $(basename $0) commit && $(basename $0) sync"
+set -euo pipefail
+
+CMD="baidupcs"
+STATE_DIR=".baidusync"
+PATH_FILE="$STATE_DIR/path"
+LOCAL_FILE="$STATE_DIR/local"
+REMOTE_FILE="$STATE_DIR/remote"
+
+if ! command -v "$CMD" >/dev/null 2>&1; then
+    echo "Error: $CMD not found."
+    exit 1
+fi
+
+mkdir -p "$STATE_DIR"
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") <command> [args]
+
+Dependency: baidupcs-go
+
+Commands:
+  help              show help
+  init <remote-dir> associate current dir with remote dir
+  commit            refresh local and remote file lists
+  diff              show differences between local and remote
+  push              upload local-only files to remote
+  pull              download remote-only files to local
+  sync              push + pull
+EOF
 }
 
-IFS=$'\n'
+get_remote_list() {
+    local remote_dir
+    remote_dir=$(cat "$PATH_FILE")
+    "$CMD" ls "$remote_dir" | awk '{print $NF}' | sort
+}
 
-case "$1" in
-'help') show_help && exit 1 ;;
-'init')
-    echo "$2" >.path
+get_local_list() {
+    find . -maxdepth 1 -type f ! -name '.*' -printf '%f\n' | sort
+}
 
-    # 将度盘上的文件按大小升序排列 依靠“2021-11-20 09:16:15”这样的时间格式筛出所有文件名
-    baidupcs ls --size $(cat .path) | sed -n 's/.*[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\} [0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}\(.*\)/\1/p' | awk '$1=$1' >.remote
+save_remote() {
+    get_remote_list >"$REMOTE_FILE"
+}
 
-    # 将本地文件按大小升序排列
-    ls -Sr >.local
+save_local() {
+    get_local_list >"$LOCAL_FILE"
+}
+
+case "${1:-}" in
+help)
+    show_help
+    exit 0
     ;;
-'commit')
-    baidupcs ls --size $(cat .path) | sed -n 's/.*[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\} [0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}\(.*\)/\1/p' | awk '$1=$1' >.remote
-    ls -Sr >.local
+init)
+    if [ -z "${2:-}" ]; then
+        echo "Error: remote directory path required."
+        exit 1
+    fi
+    echo "$2" >"$PATH_FILE"
+    save_remote
+    save_local
+    echo "Initialized: local dir <-> $2"
     ;;
-'diff')
-    echo '***** 远程有 本地无 *****'
-    diff .local .remote | sed -n 's/> \(.*\)/\1/p'
-
-    echo '***** 远程无 本地有 *****'
-    diff .local .remote | sed -n 's/< \(.*\)/\1/p'
+commit)
+    if [ ! -f "$PATH_FILE" ]; then
+        echo "Error: not initialized. Run '$(basename "$0") init <remote-dir>' first."
+        exit 1
+    fi
+    save_remote
+    save_local
+    echo "Committed: local and remote lists updated."
     ;;
-'push')
-    for file in $(diff .local .remote | sed -n 's/< \(.*\)/\1/p'); do
-        baidupcs upload "$(pwd)/$file" $(cat .path)
-    done
-
-    baidupcs ls --size $(cat .path) | sed -n 's/.*[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\} [0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}\(.*\)/\1/p' | awk '$1=$1' >.remote
+diff)
+    if [ ! -f "$LOCAL_FILE" ] || [ ! -f "$REMOTE_FILE" ]; then
+        echo "Error: no snapshot. Run '$(basename "$0") commit' first."
+        exit 1
+    fi
+    echo "***** Remote only *****"
+    comm -13 "$LOCAL_FILE" "$REMOTE_FILE"
+    echo "***** Local only *****"
+    comm -23 "$LOCAL_FILE" "$REMOTE_FILE"
     ;;
-'pull')
-    for file in $(diff .local .remote | sed -n 's/> \(.*\)/\1/p'); do
-        baidupcs download -saveto "$(pwd)/" $(cat .path)/"$file"
-    done
-
-    ls -Sr >.local
+push)
+    if [ ! -f "$LOCAL_FILE" ] || [ ! -f "$REMOTE_FILE" ]; then
+        echo "Error: no snapshot. Run '$(basename "$0") commit' first."
+        exit 1
+    fi
+    remote_dir=$(cat "$PATH_FILE")
+    while IFS= read -r file; do
+        echo "Uploading: $file"
+        "$CMD" upload "$file" "$remote_dir"
+    done < <(comm -23 "$LOCAL_FILE" "$REMOTE_FILE")
+    save_remote
     ;;
-'sync')
-    for file in $(diff .local .remote | sed -n 's/< \(.*\)/\1/p'); do
-        baidupcs upload "$(pwd)/$file" $(cat .path)
-    done
-    for file in $(diff .local .remote | sed -n 's/> \(.*\)/\1/p'); do
-        baidupcs download -saveto "$(pwd)/" $(cat .path)/"$file"
-    done
-
-    baidupcs ls --size $(cat .path) | sed -n 's/.*[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\} [0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}\(.*\)/\1/p' | awk '$1=$1' >.remote
-    ls -Sr >.local
+pull)
+    if [ ! -f "$LOCAL_FILE" ] || [ ! -f "$REMOTE_FILE" ]; then
+        echo "Error: no snapshot. Run '$(basename "$0") commit' first."
+        exit 1
+    fi
+    remote_dir=$(cat "$PATH_FILE")
+    while IFS= read -r file; do
+        echo "Downloading: $file"
+        "$CMD" download -saveto "$(pwd)/" "$remote_dir/$file"
+    done < <(comm -13 "$LOCAL_FILE" "$REMOTE_FILE")
+    save_local
     ;;
-*) echo "Error: unknown commands!" && exit 1 ;;
+sync)
+    if [ ! -f "$LOCAL_FILE" ] || [ ! -f "$REMOTE_FILE" ]; then
+        echo "Error: no snapshot. Run '$(basename "$0") commit' first."
+        exit 1
+    fi
+    remote_dir=$(cat "$PATH_FILE")
+    while IFS= read -r file; do
+        echo "Uploading: $file"
+        "$CMD" upload "$file" "$remote_dir"
+    done < <(comm -23 "$LOCAL_FILE" "$REMOTE_FILE")
+    while IFS= read -r file; do
+        echo "Downloading: $file"
+        "$CMD" download -saveto "$(pwd)/" "$remote_dir/$file"
+    done < <(comm -13 "$LOCAL_FILE" "$REMOTE_FILE")
+    save_remote
+    save_local
+    echo "Sync done."
+    ;;
+*)
+    echo "Error: unknown command '${1:-}'."
+    show_help
+    exit 1
+    ;;
 esac

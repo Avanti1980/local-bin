@@ -1,105 +1,127 @@
 #!/usr/bin/env bash
 
-function show_help() {
-    echo "Usage:        $(basename $0) [options]"
-    echo "Dependencies: pdftk or ghostscript"
-    echo "Options:      -h, --help                 show help"
-    echo "              -v, --version              show version"
-    echo "              -b, --bin    <pdftk|gs>    use pdftk if not specified"
-    echo "              -i, --input  <file>        necessary if option is not -h or -v"
-    echo "              -o, --output <file>        merge.pdf if not specified"
-    echo "Example:      $(basename $0) -i 1.pdf 2.pdf 3.pdf -o out.pdf"
+set -euo pipefail
+
+VERSION="v261006"
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [options]
+
+Dependency: pdftk or ghostscript (gs)
+
+Options:
+  -h, --help               show help
+  -v, --version            show version
+  -b, --bin    <pdftk|gs>  use pdftk if not specified
+  -i, --input  <file>      input PDF file, one or more after -i
+  -o, --output <file>      output PDF file, default: merge.pdf
+
+Example:
+  $(basename "$0") -i 1.pdf 2.pdf 3.pdf -o out.pdf
+  $(basename "$0") -i 1.pdf -i 2.pdf -i 3.pdf -o out.pdf -b gs
+EOF
 }
 
-function show_version() {
-    echo "$(basename $0) v20210904, depending on pdftk or ghostscript"
+show_version() {
+    echo "$(basename "$0") ${VERSION}, depending on pdftk or ghostscript"
 }
 
-in_list='' && bin=pdftk && n=1
-b=-1 && b_end=0 && in=-1 && in_end=0 && out=-1 && out_end=0
+bin="pdftk"
+input_files=()
+output=""
 
-while [ $n -le $# ]; do
-    eval var=\${$n}
-    case $(echo "$var" | sed -e 's/\(.*\.\)//' | tr 'A-Z' 'a-z') in
-    '-h' | '--help') show_help && exit 1 ;;
-    '-v' | '--version') show_version && exit 1 ;;
-    '-b' | '--bin')
-        if [ $b = -1 ]; then
-            b=0
-            if [ $in -ge 0 ]; then
-                in_end=1 # if input has already started, close it
-            fi
-            if [ $out -ge 0 ]; then
-                out_end=1 # if output has already started, close it
-            fi
-        else
-            echo "Error: option {-b, --bin} is duplicated!" && show_help && exit 1
-        fi
+n=1
+while [ "$n" -le "$#" ]; do
+    arg="${!n}"
+    case "$arg" in
+    -h | --help)
+        show_help
+        exit 0
         ;;
-    '-i' | '--input')
-        if [ $in = -1 ]; then
-            in=0
-            if [ $b -ge 0 ]; then
-                b_end=1
-            fi
-            if [ $out -ge 0 ]; then
-                out_end=1 # if output has already started, close it
-            fi
-        else
-            echo "Error: option {-i, --input} is duplicated!" && show_help && exit 1
-        fi
+    -v | --version)
+        show_version
+        exit 0
         ;;
-    '-o' | '--output')
-        if [ $out = -1 ]; then
-            out=0
-            if [ $b -ge 0 ]; then
-                b_end=1
-            fi
-            if [ $in -ge 0 ]; then
-                in_end=1 # if output has already started, close it
-            fi
-        else
-            echo "Error: option {-o, --output} is duplicated!" && show_help && exit 1
+    -b | --bin)
+        next=$((n + 1))
+        if [ "$next" -gt "$#" ]; then
+            echo "Error: -b/--bin requires pdftk or gs."
+            exit 1
         fi
+        bin="${!next}"
+        n=$((next + 1))
         ;;
-    'pdftk' | 'gs')
-        if [ $b = 0 -a $b_end = 0 ]; then
-            bin="$var" && b=1
-        else
-            echo "Error: invalid command!" && show_help && exit 1
+    -i | --input)
+        next=$((n + 1))
+        if [ "$next" -gt "$#" ]; then
+            echo "Error: -i/--input requires at least one file."
+            exit 1
         fi
+        while [ "$next" -le "$#" ]; do
+            next_arg="${!next}"
+            case "$next_arg" in
+            -*)
+                break
+                ;;
+            *)
+                input_files+=("$next_arg")
+                next=$((next + 1))
+                ;;
+            esac
+        done
+        n="$next"
         ;;
-    'pdf')
-        if [ $out = 0 -a $out_end = 0 ]; then
-            output="$var" && out=1
-        elif [ $in -ge 0 -a $in_end = 0 ]; then
-            if [ -f "$var" ]; then # if file exists, append to in_list
-                in_list="$in_list '$var'" && ((in++))
-            else
-                echo "Error: file '$var' not found!" && exit 1
-            fi
-        else
-            echo "Error: invalid command!" && show_help && exit 1
+    -o | --output)
+        next=$((n + 1))
+        if [ "$next" -gt "$#" ]; then
+            echo "Error: -o/--output requires a file path."
+            exit 1
         fi
+        output="${!next}"
+        n=$((next + 1))
         ;;
-    *) echo "Error: unknown options or invalid file type!" && show_help && exit 1 ;;
+    *)
+        echo "Error: unknown option '$arg'."
+        show_help
+        exit 1
+        ;;
     esac
-    ((n++))
 done
 
-if [ $in -le 0 ]; then
-    echo "Error: no input!" && show_help && exit 1
+if [ "${#input_files[@]}" -eq 0 ]; then
+    echo "Error: no input file specified."
+    show_help
+    exit 1
 fi
 
-case $out in
-'-1') output='merge.pdf' ;;                             # output not specified
-'0') echo "Error: no output!" && show_help && exit 1 ;; # with -o option but no output file specified
+if [[ -z "$output" ]]; then
+    output="merge.pdf"
+fi
+
+case "$bin" in
+pdftk | gs) ;;
+*)
+    echo "Error: invalid backend '$bin'."
+    echo "Allowed values: pdftk, gs"
+    exit 1
+    ;;
 esac
 
-case $bin in
-'pdftk') command="pdftk$in_list cat output '$output'" ;;
-'gs') command="gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -dPDFSETTINGS=/prepress -sOutputFile='$output'$in_list" ;;
+for f in "${input_files[@]}"; do
+    if [[ -z "$f" ]]; then
+        echo "Error: input file not found: $f"
+        exit 1
+    fi
+done
+
+case "$bin" in
+pdftk)
+    pdftk "${input_files[@]}" cat output "$output"
+    ;;
+gs)
+    gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile="$output" "${input_files[@]}"
+    ;;
 esac
 
-# echo $command
-eval $command
+echo "Merged: $output (files: ${#input_files[@]})"

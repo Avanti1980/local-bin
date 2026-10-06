@@ -1,106 +1,121 @@
 #!/usr/bin/env bash
 
-function show_help() {
-    echo "Usage:        $(basename $0) [options]"
-    echo "Dependencies: imagemagick"
-    echo "Options:      -h, --help                 show help"
-    echo "              -v, --version              show version"
-    echo "              -d, --direction <h|v>      horizontal if not specified"
-    echo "              -i, --input     <file>     necessary if option is not -h or -v"
-    echo "              -o, --output    <file>     merge.jpg if not specified"
-    echo "Example:      $(basename $0) -d v -i 1.jpg 2.png 3.jpeg -o out.jpg"
+set -euo pipefail
+
+VERSION="v261007"
+
+show_help() {
+    cat <<EOF
+Usage: $(basename "$0") [options]
+
+Dependencies: ImageMagick (magick)
+
+Options:
+  -h, --help                 show help
+  -v, --version              show version
+  -d, --direction <h|v>      h for horizontal, v for vertical (default: h)
+  -i, --input     <file...>  input images, one or more after -i
+  -o, --output    <file>     output image, default: merge.jpg
+
+Example:
+  $(basename "$0") -d v -i 1.jpg 2.png 3.jpeg -o out.jpg
+  $(basename "$0") -i 1.jpg -i 2.png -o out.jpg -d h
+EOF
 }
 
-function show_version() {
-    echo "$(basename $0) v20210904, depending on imagemagick"
+show_version() {
+    echo "$(basename "$0") ${VERSION}, depending on ImageMagick"
 }
 
-input_list='' && direction='+append' && n=1
-d=-1 && in=-1 && out=-1
-d_end=0 && in_end=0 && out_end=0
+direction="h"
+input_files=()
+output=""
 
-while [ $n -le $# ]; do
-    eval var=\${$n}
-    ext=$(echo "$var" | sed -e 's/\(.*\.\)//' | tr 'A-Z' 'a-z') # get ext name
-    case "$ext" in
-    '-h' | '--help') show_help && exit 1 ;;
-    '-v' | '--version') show_version && exit 1 ;;
-    '-d' | '--direction')
-        if [ $d = -1 ]; then
-            d=0
-            if [ $in -ge 0 ]; then
-                in_end=1 # if input has already started, close it
-            fi
-            if [ $out -ge 0 ]; then
-                out_end=1 # if output has already started, close it
-            fi
-        else
-            echo "Error: option {-d, --direction} is duplicated!" && show_help && exit 1
-        fi
+n=1
+while [ "$n" -le "$#" ]; do
+    arg="${!n}"
+    case "$arg" in
+    -h | --help)
+        show_help
+        exit 0
         ;;
-    '-i' | '--input')
-        if [ $in = -1 ]; then
-            in=0
-            if [ $d -ge 0 ]; then
-                d_end=1
-            fi
-            if [ $out -ge 0 ]; then
-                out_end=1 # if output has already started, close it
-            fi
-        else
-            echo "Error: option {-i, --input} is duplicated!" && show_help && exit 1
-        fi
+    -v | --version)
+        show_version
+        exit 0
         ;;
-    '-o' | '--output')
-        if [ $out = -1 ]; then
-            out=0
-            if [ $d -ge 0 ]; then
-                d_end=1
-            fi
-            if [ $in -ge 0 ]; then
-                in_end=1 # if output has already started, close it
-            fi
-        else
-            echo "Error: option {-o, --output} is duplicated!" && show_help && exit 1
+    -d | --direction)
+        next=$((n + 1))
+        if [ "$next" -gt "$#" ]; then
+            echo "Error: -d/--direction requires h or v."
+            exit 1
         fi
+        direction="${!next}"
+        n=$((next + 1))
         ;;
-    'h' | 'v')
-        if [ $d = 0 -a $d_end = 0 ]; then
-            if [ $var = v ]; then
-                direction="-append"
-            fi
-            d=1
-        else
-            echo "Error: invalid command!" && show_help && exit 1
+    -i | --input)
+        next=$((n + 1))
+        if [ "$next" -gt "$#" ]; then
+            echo "Error: -i/--input requires at least one file."
+            exit 1
         fi
+        while [ "$next" -le "$#" ]; do
+            next_arg="${!next}"
+            case "$next_arg" in
+            -*)
+                break
+                ;;
+            *)
+                input_files+=("$next_arg")
+                next=$((next + 1))
+                ;;
+            esac
+        done
+        n="$next"
         ;;
-    'png' | 'jpg' | 'jpeg' | 'bmp' | 'gif')
-        if [ $out = 0 -a $out_end = 0 ]; then
-            output="$var" && out=1
-        elif [ $in -ge 0 -a $in_end = 0 ]; then
-            if [ -f "$var" ]; then
-                input_list="$input_list '$var'" && ((in++))
-            else
-                echo "Error: picture '$var' not found!" && exit 1
-            fi
-        else
-            echo "Error: invalid command!" && show_help && exit 1
+    -o | --output)
+        next=$((n + 1))
+        if [ "$next" -gt "$#" ]; then
+            echo "Error: -o/--output requires a file path."
+            exit 1
         fi
+        output="${!next}"
+        n=$((next + 1))
         ;;
-    *) echo "Error: unknown options or invalid file type!" && show_help && exit 1 ;;
+    *)
+        echo "Error: unknown option '$arg'."
+        show_help
+        exit 1
+        ;;
     esac
-    ((n++))
 done
 
-if [ $in -le 0 ]; then
-    echo "Error: no input!" && show_help && exit 1
+if [ "${#input_files[@]}" -eq 0 ]; then
+    echo "Error: no input file specified."
+    show_help
+    exit 1
 fi
 
-case $out in
-'-1') output='merge.jpg' ;;                             # output not specified
-'0') echo "Error: no output!" && show_help && exit 1 ;; # with -o option but no output file specified
+if [ -z "$output" ]; then
+    output="merge.jpg"
+fi
+
+case "$direction" in
+h) append_flag="+append" ;;
+v) append_flag="-append" ;;
+*)
+    echo "Error: invalid direction '$direction'."
+    echo "Allowed values: h, v"
+    exit 1
+    ;;
 esac
 
-command="magick $input_list $direction -quality 100 '$output'"
-# echo $command
-eval $command
+for f in "${input_files[@]}"; do
+    if [ ! -f "$f" ]; then
+        echo "Error: input file not found: $f"
+        exit 1
+    fi
+done
+
+magick "${input_files[@]}" $append_flag -quality 100 -auto-orient "$output"
+
+echo "Merged: $output (direction: ${direction})"
