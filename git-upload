@@ -7,13 +7,6 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then # 检查是否在
     exit 1
 fi
 
-git add -A
-
-if git diff --quiet && git diff --cached --quiet; then # 检查是否有变更
-    echo "No changes to commit."
-    exit 0
-fi
-
 if [ -z "${1:-}" ]; then # 检查提交信息
     echo "Error: commit message is required."
     echo "Usage: $(basename "$0") <message> [github|gitee|both]"
@@ -21,6 +14,7 @@ if [ -z "${1:-}" ]; then # 检查提交信息
 fi
 
 branch=$(git rev-parse --abbrev-ref HEAD) # 检测当前分支
+git add -A
 git commit -m "$1"
 target="${2:-both}"
 
