@@ -14,7 +14,7 @@ fi
 
 if [ -z "${1:-}" ]; then # 检查提交信息
     echo "Error: commit message is required."
-    echo "Usage: $(basename "$0") <message> [hub|ee|both]"
+    echo "Usage: $(basename "$0") <message> [github|gitee|both]"
     exit 1
 fi
 
@@ -24,11 +24,11 @@ git commit -m "$1"
 target="${2:-both}"
 
 case "$target" in
-hub)
+github)
     echo "Pushing to GitHub ($branch)..."
     git push github "$branch"
     ;;
-ee)
+gitee)
     echo "Pushing to Gitee ($branch)..."
     git push gitee "$branch"
     ;;
@@ -39,8 +39,8 @@ both)
     git push gitee "$branch"
     ;;
 *)
-    echo "Error: 2nd param must be [hub|ee|both]."
-    echo "Usage: $(basename "$0") <message> [hub|ee|both]"
+    echo "Error: 2nd param must be [github|gitee|both]."
+    echo "Usage: $(basename "$0") <message> [github|gitee|both]"
     exit 1
     ;;
 esac

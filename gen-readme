@@ -13,12 +13,9 @@ if [ ! -f "$README" ]; then
     touch $README
 fi
 
-tree_output=$(tree -L 3 -I '*.sh|*.md' .)
-
-{
-    echo '```text'
-    echo " $ tree_output"
-    echo '```'
-} >"$README"
+tree -L 3 -I '*.sh|*.md' >$README
+sed -i '1c\```text' $README
+sed -i '$i\```' $README
+sed -i '/^$/d' $README
 
 echo "Updated $README"
