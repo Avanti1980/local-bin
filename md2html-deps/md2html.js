@@ -29,7 +29,7 @@ const config = {
   mathInlineDelimiters: [["$", "$"], ["\\(", "\\)"]],
   mathBlockDelimiters: [["$$", "$$"], ["\\[", "\\]"]],
   mathRenderingOnLineService: "https://latex.codecogs.com/gif.latex", // "https://latex.codecogs.com/svg.latex", "https://latex.codecogs.com/png.latex"
-  mathjaxV3ScriptSrc: 'https://cdn.jsdelivr.net/npm/mathjax@4.1.0/tex-chtml.js', // 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js', // 
+  mathjaxV3ScriptSrc: 'https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-chtml.js', // 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js', // 
 
   // Enable Wiki Link syntax support. More information can be found a  https://help.github.com/articles/adding-links-to-wikis/
   enableWikiLinkSyntax: true,
