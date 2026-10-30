@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VERSION="v261030"
+
+if [[ $# -ne 2 ]]; then # 参数校验
+    echo "用法: $0 <文件大小> <文件扩展名>"
+    echo "示例: $0 1M txt (查找当前目录下大于1M的txt文件)"
+    exit 1
+fi
+
+SIZE_LIMIT="$1"
+FILE_EXT="$2"
+
+FILE_EXT="${FILE_EXT#.}"
+
+echo "正在搜索当前目录下大于${SIZE_LIMIT}的${FILE_EXT}文件 ..."
+
+find . -type f -name "*.${FILE_EXT}" -size "+${SIZE_LIMIT}" -print0 | while IFS= read -r -d '' file; do
+
+    basename=$(basename "$file")
+    new_name="${basename%.*}.large.${FILE_EXT}"
+
+    dir=$(dirname "$file")
+    new_path="${dir}/${new_name}"
+
+    if [[ "$file" == *.large.${FILE_EXT} ]]; then
+        continue
+    fi
+
+    mv -- "$file" "$new_path"
+    echo "已重命名: $file -> $new_path"
+
+done
+
+echo "处理完成。"
+
+# -exec bash -c 'for f; do mv "$f" "${f%.${2}}.large.${2}"; done' _ {} +
